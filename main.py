@@ -5,6 +5,7 @@ import argparse
 import glob
 import re
 import os
+import random
 
 
 def main():
@@ -19,10 +20,10 @@ def main():
     args = parser.parse_args()
 
     sessions_dir = 'sessions'
-    list_of_files = glob.glob(f'{sessions_dir}/*.pkl')
     if args.add:
         # Log into new accounts
         for i in range(args.add):
+            list_of_files = glob.glob(f'{sessions_dir}/*.pkl')
             if len(list_of_files) == 0:
                 number = 1
             else:
@@ -33,6 +34,7 @@ def main():
             acc.close()
     else:
         # Claim on all accounts in sessions folder
+        list_of_files = glob.glob(f'{sessions_dir}/*.pkl')
         for filename in list_of_files:
             regex = re.compile("(ac[0-9]*)")
             account = regex.findall(filename)[0]
@@ -43,7 +45,7 @@ def main():
                 logger.critical(f"Failed to claim on {account}: {str(E)}")
                 acc.close()
                 continue
-            time.sleep(10)
+            time.sleep(random.randint(5, 10))
             acc.close()
 
 
