@@ -4,6 +4,7 @@ from selenium.webdriver.common.by import By
 import json
 import os
 import logging
+import random
 
 
 logger = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ class HotClaimer(TelegramAccount):
 
     def open_hot_app(self):
         self.driver.get("https://web.telegram.org/k/#@herewalletbot")
-        time.sleep(10)
+        time.sleep(random.randint(10, 12))
         self.driver.find_element(By.CSS_SELECTOR, ".new-message-bot-commands").click()
         time.sleep(5)
         self.driver.find_element(By.CSS_SELECTOR, ".autocomplete-peer-helper-list-element:nth-child(1)").click()
@@ -61,8 +62,10 @@ class HotClaimer(TelegramAccount):
         # Switch to the iframe
         iframe = self.driver.find_element(By.XPATH, "//iframe")
         self.driver.switch_to.frame(iframe)
-        time.sleep(20)
-        self.driver.find_element(By.XPATH, "//*[@id='root']/div/div/div[1]/div/div/div[4]/div[2]").click()
+        time.sleep(random.randint(20, 25))
+        storage = self.driver.find_element(By.XPATH, "//*[@id='root']/div/div/div[1]/div/div/div[4]/div[2]/div")
+        self.driver.execute_script("arguments[0].scrollIntoView(true)", storage)
+        storage.click()
         time.sleep(2)
         # Check news(if available) or claim
         self.driver.find_element(By.XPATH, "//*[@id='root']/div/div/div[2]/div/div[3]/div/div[2]/div[2]/button").click()
@@ -70,6 +73,6 @@ class HotClaimer(TelegramAccount):
         # Claim
         try:
             self.driver.find_element(By.XPATH, "//*[@id='root']/div/div/div[2]/div/div[3]/div/div[2]/div[2]/button").click()
-        except Exception as e:
-            print(e)
+        except Exception:
+            print("Claim button not clickable")
         logger.warning(f'Claimed hot for {self.account_name}')
