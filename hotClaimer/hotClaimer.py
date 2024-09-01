@@ -16,8 +16,10 @@ class HotClaimer(TelegramAccount):
         try:
             self.load_hot_local_storage()
             logger.warning(f'Loaded hot wallet local storage for {self.account_name}')
+            loaded = True
         except FileNotFoundError:
             self.save_hot_local_storage()
+            loaded = True
             logger.warning(f'Saved hot wallet local storage for {self.account_name}')
 
     def save_hot_local_storage(self):
@@ -74,5 +76,4 @@ class HotClaimer(TelegramAccount):
         try:
             self.driver.find_element(By.XPATH, "//*[@id='root']/div/div/div[2]/div/div[3]/div/div[2]/div[2]/button").click()
         except Exception:
-            print("Claim button not clickable")
-        logger.warning(f'Claimed hot for {self.account_name}')
+            raise Exception("Claim button not clickable")
