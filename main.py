@@ -4,6 +4,7 @@ import argparse
 import glob
 import re
 import os
+import time
 
 
 def add_accounts(number, sessions_dir):

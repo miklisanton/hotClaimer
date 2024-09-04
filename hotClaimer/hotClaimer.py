@@ -1,6 +1,7 @@
 from proxytg import TelegramAccount
 import time
 from selenium.webdriver.common.by import By
+from selenium.webdriver import ActionChains
 import json
 import os
 import logging
@@ -20,8 +21,7 @@ class HotClaimer(TelegramAccount):
         try:
             self.hot_login = self.load_hot_local_storage()
             print(self.hot_login)
-            needs_upgrade = isUpgradable(self.hot_login)
-            print(needs_upgrade)
+            self.needs_upgrade = isUpgradable(self.hot_login)
             logger.warning(f'Loaded hot wallet local storage for {self.account_name}')
             loaded = True
         except FileNotFoundError:
@@ -88,14 +88,45 @@ class HotClaimer(TelegramAccount):
             self.driver.find_element(By.XPATH, "//*[@id='root']/div/div/div[2]/div/div[3]/div/div[2]/div[2]/button").click()
         except Exception:
             raise Exception("Claim button not clickable")
-        # 
+        time.sleep(2)
+        # Skip news
+        try:
+            news = self.driver.find_element(By.XPATH, "/html/body/div[4]/div/div[2]/div/div/button")
+            news.click()
+            time.sleep(2)
+            self.driver.switch_to.default_content()
+            time.sleep(2)
+            back = self.driver.find_element(By.XPATH, "/html/body/div[7]/div/div[1]/button[1]")
+            back.click()
+            time.sleep(2)
+            back.click()
+            time.sleep(2)
+            back.click()
+            iframe = self.driver.find_element(By.XPATH, "//iframe")
+            self.driver.switch_to.frame(iframe)
+        except Exception as e:
+            print(e)
+            pass
+        # Claim
+        time.sleep(2)
+        try:
+            self.driver.find_element(By.XPATH, "//*[@id='root']/div/div/div[2]/div/div[3]/div/div[2]/div[2]/button").click()
+            time.sleep(2)
+        except Exception as e:
+            print(e)
+            pass
+        # Upgrade firespace if needed
+        if self.needs_upgrade:
+            self.upgrade_storage()
 
     def upgrade_storage(self):
-        # Get current storage level
-
-        amount = self.account.driver.find_element(By.XPATH,
-                                          "//*[@id='root']/div/div/div[2]/div/div[2]/div[3]/p[2]")
-        print(amount.text)
+        logger.warning(f'Upgrading storage for {self.account_name}')
+        self.driver.find_element(By.XPATH, "//*[@id='root']/div/div/div[2]/div/div[4]/div/div[3]").click()
+        time.sleep(2)
+        self.driver.find_element(By.XPATH, "//*[@id='root']/div/div/div[4]/div/div[3]/div[1]").click()
+        time.sleep(2)
+        self.driver.find_element(By.XPATH, "/html/body/div[4]/div/div[2]/div/button").click()
+        time.sleep(30)
 
 
 def isUpgradable(account_id, rpc_url="https://rpc.mainnet.near.org"):
