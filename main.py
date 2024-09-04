@@ -5,6 +5,7 @@ import glob
 import re
 import os
 import time
+import random
 
 
 def add_accounts(number, sessions_dir):
@@ -22,6 +23,7 @@ def add_accounts(number, sessions_dir):
 
 def multiple_claim(sessions_dir, logger, retry=3):
     list_of_files = glob.glob(f'{sessions_dir}/*.pkl')
+    random.shuffle(list_of_files)
     for filename in list_of_files:
         regex = re.compile("(ac[0-9]*)")
         account = regex.findall(filename)[0]
@@ -31,6 +33,7 @@ def multiple_claim(sessions_dir, logger, retry=3):
             try:
                 acc = HotClaimer(account, sessions_dir)
                 acc.claim()
+                time.sleep(random.randint(5, 9))
                 logger.warning(f'Claimed hot for {account}')
                 claimed = True
                 break

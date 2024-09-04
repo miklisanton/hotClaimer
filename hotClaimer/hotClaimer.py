@@ -1,7 +1,9 @@
 from proxytg import TelegramAccount
 import time
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
-from selenium.webdriver import ActionChains
+from selenium.webdriver.chrome.options import Options
 import json
 import os
 import logging
@@ -15,18 +17,21 @@ logger = logging.getLogger(__name__)
 
 class HotClaimer(TelegramAccount):
     def __init__(self, name, sessions_dir):
-        super().__init__(name, sessions_dir)
+        options = Options()
+        options.add_argument('--disable-blink-features=AutomationControlled')  
+        options.add_experimental_option('excludeSwitches', ['enable-automation'])  
+        options.add_experimental_option('useAutomationExtension', False)  
+        super().__init__(name, sessions_dir, options=options)
         self.hot_login = ""
         self.needs_upgrade = False
+        self.wait = WebDriverWait(self.driver, 30)
         try:
             self.hot_login = self.load_hot_local_storage()
             print(self.hot_login)
             self.needs_upgrade = isUpgradable(self.hot_login)
             logger.warning(f'Loaded hot wallet local storage for {self.account_name}')
-            loaded = True
         except FileNotFoundError:
             self.save_hot_local_storage()
-            loaded = True
             logger.warning(f'Saved hot wallet local storage for {self.account_name}')
 
     def save_hot_local_storage(self):
@@ -51,7 +56,7 @@ class HotClaimer(TelegramAccount):
         time.sleep(2)
         with open(os.path.join(self.sessions_dir, f'{self.account_name}_hot_local_storage.json'), 'r') as file:
             local_storage = json.load(file)
-            username = next(iter(local_storage))
+            username = get_username(local_storage)
             for key, value in local_storage.items():
                 self.driver.execute_script(f"window.localStorage.setItem(arguments[0], arguments[1]);", key, value)
         self.driver.refresh()
@@ -75,21 +80,26 @@ class HotClaimer(TelegramAccount):
         # Switch to the iframe
         iframe = self.driver.find_element(By.XPATH, "//iframe")
         self.driver.switch_to.frame(iframe)
-        time.sleep(random.randint(20, 25))
-        storage = self.driver.find_element(By.XPATH, "//*[@id='root']/div/div/div[1]/div/div/div[4]/div[2]/div")
+        storage = self.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='root']/div/div/div[1]/div/div/div[4]/div[2]/div")))
+        time.sleep(random.randint(1, 3))
         self.driver.execute_script("arguments[0].scrollIntoView(true)", storage)
         storage.click()
         time.sleep(2)
         # Check news(if available) or claim
-        self.driver.find_element(By.XPATH, "//*[@id='root']/div/div/div[2]/div/div[3]/div/div[2]/div[2]/button").click()
+        try:
+            self.driver.find_element(By.XPATH, "//*[@id='root']/div/div/div[2]/div/div[3]/div/div[2]/div[2]/button").click()
+        except Exception:
+            logger.warning(f'No claim available for {self.account_name}')
+            return
         time.sleep(2)
         # Claim
         try:
             self.driver.find_element(By.XPATH, "//*[@id='root']/div/div/div[2]/div/div[3]/div/div[2]/div[2]/button").click()
         except Exception:
-            raise Exception("Claim button not clickable")
+            logger.warning(f'No claim available for {self.account_name}')
+            return
         time.sleep(2)
-        # Skip news
+        # Skip news and claim
         try:
             news = self.driver.find_element(By.XPATH, "/html/body/div[4]/div/div[2]/div/div/button")
             news.click()
@@ -104,16 +114,12 @@ class HotClaimer(TelegramAccount):
             back.click()
             iframe = self.driver.find_element(By.XPATH, "//iframe")
             self.driver.switch_to.frame(iframe)
-        except Exception as e:
-            print(e)
-            pass
-        # Claim
-        time.sleep(2)
-        try:
+            time.sleep(2)
+            # claim again
             self.driver.find_element(By.XPATH, "//*[@id='root']/div/div/div[2]/div/div[3]/div/div[2]/div[2]/button").click()
             time.sleep(2)
-        except Exception as e:
-            print(e)
+        except Exception:
+            print("No news")
             pass
         # Upgrade firespace if needed
         if self.needs_upgrade:
@@ -127,6 +133,10 @@ class HotClaimer(TelegramAccount):
         time.sleep(2)
         self.driver.find_element(By.XPATH, "/html/body/div[4]/div/div[2]/div/button").click()
         time.sleep(30)
+
+
+def get_username(ls):
+    return next((key for key in ls if key.endswith(".tg")), None)
 
 
 def isUpgradable(account_id, rpc_url="https://rpc.mainnet.near.org"):
