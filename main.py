@@ -6,6 +6,7 @@ import re
 import os
 import time
 import random
+import schedule
 
 
 def add_accounts(number, sessions_dir):
@@ -70,6 +71,7 @@ def main():
                         help="specify directory to store sessions")
     args = parser.parse_args()
 
+
     sessions_dir = args.sessions
     if args.add:
         # Log into new accounts
@@ -77,6 +79,10 @@ def main():
     else:
         # Claim on all accounts in sessions folder
         multiple_claim(sessions_dir, logger)
+        schedule.every(2).hours.do(multiple_claim, sessions_dir, logger)
+        while True:
+            schedule.run_pending()
+            time.sleep(10)
 
 
 if __name__ == '__main__':

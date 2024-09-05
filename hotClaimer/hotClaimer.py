@@ -67,12 +67,11 @@ class HotClaimer(TelegramAccount):
         self.driver.get("https://web.telegram.org/k/#@herewalletbot")
         time.sleep(random.randint(10, 12))
         self.driver.find_element(By.CSS_SELECTOR, ".new-message-bot-commands").click()
-        time.sleep(5)
-        self.driver.find_element(By.CSS_SELECTOR, ".autocomplete-peer-helper-list-element:nth-child(1)").click()
-        time.sleep(2)
-        self.driver.find_element(By.CSS_SELECTOR, ".anchor-url > strong").click()
-        time.sleep(2)
-        self.driver.find_element(By.XPATH, "/html/body/div[7]/div/div[2]/button[1]/div").click()
+        time.sleep(random.randint(1, 3))
+        try:
+            self.driver.find_element(By.XPATH, "/html/body/div[7]/div/div[2]/button[1]").click()
+        except Exception:
+            pass
 
     def claim(self):
         self.open_hot_app()
@@ -107,6 +106,12 @@ class HotClaimer(TelegramAccount):
             self.driver.switch_to.default_content()
             time.sleep(2)
             back = self.driver.find_element(By.XPATH, "/html/body/div[7]/div/div[1]/button[1]")
+            back.click()
+            time.sleep(2)
+            back.click()
+            time.sleep(2)
+            back.click()
+            time.sleep(2)
             back.click()
             time.sleep(2)
             back.click()
